@@ -42,6 +42,7 @@ async def run_agent_for_telegram(chat_id: int, text_message: str):
         # Kita kunci thread memory session pake Chat ID Telegram! Murni per Room Chat.
         state_input = {
             "thread_id": str(chat_id),
+            "user_id": str(chat_id),
             "messages": [("user", text_message)],
             "retry_count": 0
         }

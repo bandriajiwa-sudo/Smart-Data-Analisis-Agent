@@ -83,6 +83,7 @@ async def run_agent_and_dispatch_webhook(payload: AgentRequest):
         
         state_input = {
             "thread_id": payload.user_id,
+            "user_id": payload.user_id,
             "messages": [("user", payload.pesan)],
             "retry_count": 0
         }
