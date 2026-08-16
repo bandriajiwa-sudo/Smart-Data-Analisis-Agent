@@ -4,8 +4,10 @@ import json
 import logging
 import httpx
 import uuid
+import asyncio
+import re
 from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Request
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 from app.core.config import settings
@@ -35,8 +37,10 @@ class AgentRequest(BaseModel):
     webhook_secret: Optional[str] = None
     context: Optional[ContextModel] = None
 
-def dispatch_webhook(url: str, secret: Optional[str], payload: dict):
-    """Menghitung SHA256 HMAC & Dispatch webhook event"""
+import asyncio
+
+async def dispatch_webhook(url: str, secret: Optional[str], payload: dict):
+    """Menghitung SHA256 HMAC & Dispatch webhook event secara Asynchronous (Mendukung Retries)"""
     payload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)
     headers = {"Content-Type": "application/json"}
     
@@ -48,16 +52,29 @@ def dispatch_webhook(url: str, secret: Optional[str], payload: dict):
         ).hexdigest()
         headers["X-AI-Signature"] = f"sha256={signature}"
         
-    try:
-        with httpx.Client() as client:
-            resp = client.post(url, headers=headers, json=payload, timeout=20.0)
-            logger.info(f"Webhook pushed | Target: {url} | Status: {resp.status_code}")
-    except Exception as e:
-        logger.error(f"Webhook Delivery Failed (Silent drop via BackgroundTask): {e}")
+    retry_delays = [5, 15, 60]  # W6 Exponential Backoff Strategy Phase 2
+    
+    async with httpx.AsyncClient() as client:
+        for attempt, delay in enumerate(retry_delays + [0], 1):
+            try:
+                resp = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                if resp.status_code < 400:
+                    logger.info(f"Webhook pushed successfully | Target: {url} | Status: {resp.status_code}")
+                    return
+                else:
+                    logger.warning(f"Webhook failed HTTP {resp.status_code}, attempt {attempt}")
+            except Exception as e:
+                logger.error(f"Webhook Exception attempt {attempt}: {e}")
+                
+            if attempt <= len(retry_delays):
+                logger.info(f"Retrying webhook to {url} in {delay} seconds...")
+                await asyncio.sleep(delay)
+                
+    logger.critical(f"Webhook permanently failed after {len(retry_delays)} retries! Payload dropped.")
 
 async def run_agent_and_dispatch_webhook(payload: dict):
     # 1. Bangun / Compile LangGraph execution graph
-    app_graph = create_agent_graph()
+    app_graph = await create_agent_graph()
     
     state_input = {
         "thread_id": payload["user_id"], 
@@ -88,13 +105,24 @@ async def run_agent_and_dispatch_webhook(payload: dict):
             "status": "error",
             "data": {"error": str(e)}
         }
+    finally:
+        # Bersihkan pool Checkpointer W7
+        if hasattr(app_graph, "db_pool"):
+            await app_graph.db_pool.close()
+            logger.info("Checkpointer db_pool successfully closed.")
         
-    # 3. Fire Post-Dispatch (keluarkan dari mesin AI menuju backend utama user)
-    dispatch_webhook(payload["webhook_url"], payload.get("webhook_secret"), out_payload)
+    # 3. Fire Post-Dispatch asinkron menggunakan await
+    await dispatch_webhook(payload["webhook_url"], payload.get("webhook_secret"), out_payload)
+
+def sanitize_input(text: str) -> str:
+    """W8: Input Sanitization menolak raw byte executable & karakter unicode ilegal."""
+    clean_text = re.sub(r'[^\w\s\?\.,!:\'"/-]', '', text)
+    return clean_text.strip()
 
 @router.post("/run-agent", status_code=202)
-async def trigger_agent(req: AgentRequest, background_tasks: BackgroundTasks, _token: str = Depends(verify_api_key)):
+async def trigger_agent(req: AgentRequest, request: Request, background_tasks: BackgroundTasks, _token: str = Depends(verify_api_key)):
     job_id = str(uuid.uuid4())
+    req.pesan = sanitize_input(req.pesan)  # W8 Sanitization applied
     payload = req.model_dump()
     
     background_tasks.add_task(run_agent_and_dispatch_webhook, payload)

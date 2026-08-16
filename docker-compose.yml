@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - API_KEY=${API_KEY:-dev_key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - POS_DB_URI=postgresql://ai_agent_readonly:StrongRandomPassword123!@#@pos_db:5432/pos_production?sslmode=disable
+      - CHECKPOINTER_DB_URI=postgresql://ai_checkpointer_user:AnotherStrongPassword456!@#@pos_db:5432/ai_checkpointer?sslmode=disable
+    depends_on:
+      - pos_db
+    volumes:
+      - .:/app
+
+  pos_db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=pos_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - pos_data:/var/lib/postgresql/data
+      - ./sql/01_security_setup.sql:/docker-entrypoint-initdb.d/01_security_setup.sql
+
+volumes:
+  pos_data:

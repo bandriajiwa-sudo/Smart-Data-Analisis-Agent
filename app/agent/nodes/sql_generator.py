@@ -6,17 +6,13 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_CONTEXT = """
-Table: sales
-Columns: id, invoice_number, total, tax, discount, grand_total, payment_method, created_at, outlet_id
-Table: sale_items
-Columns: id, sale_id, product_id, quantity, unit_price, subtotal
-Table: products
-Columns: id, name, category_id, price, stock
-"""
+from app.db.introspection import fetch_database_schema
 
-def node_sql_generator(state: AgentState) -> dict:
-    """Menghasilkan raw SQL query berdasarkan intent"""
+async def node_sql_generator(state: AgentState) -> dict:
+    """Menghasilkan raw SQL query berdasarkan intent (Dynamic Schema)"""
+    SCHEMA_CONTEXT = await fetch_database_schema()
+    if not SCHEMA_CONTEXT:
+        SCHEMA_CONTEXT = "Table: sales\\nColumns: id, total"
     if state.intent == "general_chat":
         return {}
 
@@ -27,7 +23,12 @@ def node_sql_generator(state: AgentState) -> dict:
         ("system", "Anda adalah PostgreSQL Data Analyst AI. Buat satu baris query postgres untuk menjawab input user. \n"
                    "DILARANG menulis markdown atau penjelasan apapun. HANYA OUTPUTKAN PURE SQL.\n"
                    f"Skema Database:\n{SCHEMA_CONTEXT}\n"
-                   "Fungsi tanggal standar: gunakan CURRENT_DATE."),
+                   "Fungsi tanggal standar: gunakan CURRENT_DATE.\n\n"
+                   "--- CONTOH QUERY / FEW-SHOT EXAMPLES ---\n"
+                   "User: Berapa total penjualan hari ini?\n"
+                   "SQL: SELECT COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) = CURRENT_DATE;\n\n"
+                   "User: Apa 3 produk terjual paling banyak?\n"
+                   "SQL: SELECT p.name, SUM(si.quantity) as qty FROM sale_items si JOIN products p ON si.product_id = p.id GROUP BY p.name ORDER BY qty DESC LIMIT 3;\n"),
         ("human", "{question}")
     ])
     

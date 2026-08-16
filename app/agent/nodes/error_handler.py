@@ -20,10 +20,11 @@ Daftar kolom valid:
 - sale_items: id, sale_id, product_id, quantity, unit_price, subtotal
 - products: id, name, category_id, price, stock
 
-Tugas Anda:
-1. Perbaiki query SQL agar valid. Jika typo kolom/tabel, gunakan nama yang benar.
-2. Jika tipe tanggal salah, gunakan format standar Postgres.
-3. Kembalikan HANYA MURNI SQL tanpa teks penjelasan sama sekali."""
+STRATEGI KOREKSI (Wajib Diterapkan):
+1. Error "column/relation does not exist" -> Periksa typo. (Contoh 'sale' -> 'sales', 'totl' -> 'total').
+2. Error "function does not exist" -> Gunakan fungsi Postgres valid (Contoh TODAY() -> CURRENT_DATE).
+3. Error sintaks/aggregasi -> Ganti dengan GROUP BY yang sesuai.
+4. Kembalikan HANYA MURNI SQL tanpa teks penjelasan sama sekali."""
 
 def node_error_handler(state: AgentState) -> dict:
     """Implementasi fail-over / Self Healing LangGraph loop"""
