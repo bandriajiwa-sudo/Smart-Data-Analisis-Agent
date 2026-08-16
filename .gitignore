@@ -1,0 +1,21 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+.agent/
+*.log

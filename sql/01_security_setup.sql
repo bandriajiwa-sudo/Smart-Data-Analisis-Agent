@@ -1,0 +1,27 @@
+-- ============================================================
+-- 1. POS Database Security Setup (Read-Only User)
+-- ============================================================
+-- CREATE ROLE ai_agent_readonly WITH
+--     LOGIN
+--     PASSWORD 'GANTI_PASSWORD_KUAT'
+--     NOSUPERUSER
+--     NOCREATEDB
+--     NOCREATEROLE
+--     NOREPLICATION
+--     CONNECTION LIMIT 10;
+--
+-- GRANT CONNECT ON DATABASE pos_production TO ai_agent_readonly;
+-- GRANT USAGE ON SCHEMA public TO ai_agent_readonly;
+-- GRANT SELECT ON TABLE public.sales TO ai_agent_readonly;
+-- GRANT SELECT ON TABLE public.products TO ai_agent_readonly;
+-- ALTER ROLE ai_agent_readonly SET statement_timeout = '5000ms';
+
+-- ============================================================
+-- 2. Checkpointer Database Setup
+-- ============================================================
+-- CREATE DATABASE ai_checkpointer;
+-- \c ai_checkpointer
+-- CREATE ROLE ai_checkpointer_user WITH LOGIN PASSWORD 'PASSWORD_CHECKPOINTER' CREATEDB;
+-- GRANT ALL PRIVILEGES ON DATABASE ai_checkpointer TO ai_checkpointer_user;
+-- GRANT ALL PRIVILEGES ON SCHEMA public TO ai_checkpointer_user;
+-- ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ai_checkpointer_user;
