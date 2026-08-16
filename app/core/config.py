@@ -6,10 +6,11 @@ class Settings(BaseSettings):
     
     # API & Agent Authentication
     API_KEY: str
-    OPENAI_API_KEY: str
+    GROQ_API_KEY: str
     
-    # Webhook Verification
+    # Webhook Verification & Tools
     WEBHOOK_SECRET: str
+    TELEGRAM_BOT_TOKEN: str = "dummy"
     
     # Databases
     POS_DB_URI: str

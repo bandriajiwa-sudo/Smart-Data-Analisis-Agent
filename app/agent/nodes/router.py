@@ -1,5 +1,5 @@
 import logging
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
 from app.agent.state import AgentState
 from app.core.config import settings
@@ -26,7 +26,7 @@ def node_intent_router(state: AgentState) -> dict:
     )
     
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY)
+        llm = ChatGroq(model="llama3-70b-8192", api_key=settings.GROQ_API_KEY)
         structured_llm = llm.with_structured_output(IntentResponse)
         result = structured_llm.invoke(prompt)
         intent = result.intent

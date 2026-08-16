@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.logging_config import setup_structured_logging
 from app.api.health import router as health_router
 from app.api.agent import router as agent_router
+from app.api.telegram import router as telegram_router
 
 setup_structured_logging()
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ async def add_tracing_id(request: Request, call_next):
 
 app.include_router(health_router, prefix="/api/v1", tags=["Operational"])
 app.include_router(agent_router, prefix="/api/v1", tags=["AI Core"])
+app.include_router(telegram_router, prefix="/api/v1/telegram", tags=["Telegram Bot UI"])
 
 if __name__ == "__main__":
     import uvicorn

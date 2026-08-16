@@ -1,5 +1,5 @@
 import logging
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from app.agent.state import AgentState
 from app.core.config import settings
@@ -33,7 +33,7 @@ async def node_sql_generator(state: AgentState) -> dict:
     ])
     
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY)
+        llm = ChatGroq(model="llama3-70b-8192", api_key=settings.GROQ_API_KEY)
         chain = prompt | llm
         result = chain.invoke({"question": last_message})
         generated_sql = result.content.strip().replace("```sql", "").replace("```", "").strip()
