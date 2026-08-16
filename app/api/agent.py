@@ -12,6 +12,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 from app.core.config import settings
 from app.agent.graph import create_agent_graph
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +37,6 @@ class AgentRequest(BaseModel):
     webhook_url: str
     webhook_secret: Optional[str] = None
     context: Optional[ContextModel] = None
-
-import asyncio
 
 async def dispatch_webhook(url: str, secret: Optional[str], payload: dict):
     """Menghitung SHA256 HMAC & Dispatch webhook event secara Asynchronous (Mendukung Retries)"""
@@ -72,47 +71,46 @@ async def dispatch_webhook(url: str, secret: Optional[str], payload: dict):
                 
     logger.critical(f"Webhook permanently failed after {len(retry_delays)} retries! Payload dropped.")
 
-async def run_agent_and_dispatch_webhook(payload: dict):
-    # 1. Bangun / Compile LangGraph execution graph
-    app_graph = await create_agent_graph()
+async def run_agent_and_dispatch_webhook(payload: AgentRequest):
+    """
+    Background worker function to run Graph Agent and send final result to external Webhook 
+    with HMAC-SHA256 signature and Exponential Backoff Retry.
+    """
+    logger.info(f"Background worker started for User: {payload.user_id}")
     
-    state_input = {
-        "thread_id": payload["user_id"], 
-        "user_id": payload["user_id"],
-        "messages": [("user", payload["pesan"])]
-    }
-    
-    config = {"configurable": {"thread_id": payload["user_id"]}}
-    
-    try:
-        # Trigger event async invocation agent (LLM, RDBMS, dst)
-        final_state = await app_graph.ainvoke(state_input, config=config)
-        out_payload = {
-            "event": "agent.completed",
-            "user_id": payload["user_id"],
-            "status": final_state.get("status", "error"),
-            "data": {
-                "answer": final_state.get("final_answer"),
-                "intent": final_state.get("intent"),
-                "error": final_state.get("error_log")
-            }
-        }
-    except Exception as e:
-        logger.error(f"Graph Invocation Exception Crash: {e}")
-        out_payload = {
-            "event": "agent.completed",
-            "user_id": payload["user_id"],
-            "status": "error",
-            "data": {"error": str(e)}
-        }
-    finally:
-        # Bersihkan pool Checkpointer W7
-        if hasattr(app_graph, "db_pool"):
-            await app_graph.db_pool.close()
-            logger.info("Checkpointer db_pool successfully closed.")
+    async with AsyncPostgresSaver.from_conn_string(settings.CHECKPOINTER_DB_URI) as checkpointer:
+        app_graph = await create_agent_graph(checkpointer)
         
-    # 3. Fire Post-Dispatch asinkron menggunakan await
-    await dispatch_webhook(payload["webhook_url"], payload.get("webhook_secret"), out_payload)
+        state_input = {
+            "thread_id": payload.user_id,
+            "messages": [("user", payload.pesan)],
+            "retry_count": 0
+        }
+        
+        config = {"configurable": {"thread_id": payload.user_id}}
+        
+        try:
+            final_state = await app_graph.ainvoke(state_input, config=config)
+            
+            out_payload = {
+                "user_id": final_state.get("thread_id"),
+                "status": final_state.get("status", "unknown"),
+                "answer": final_state.get("final_answer", None),
+                "error_log": final_state.get("error_log", None),
+                "sql_used": final_state.get("generated_sql", None)
+            }
+            
+            await dispatch_webhook(payload.webhook_url, payload.webhook_secret, out_payload)
+            
+        except Exception as e:
+            logger.error(f"LangGraph execution exception on Thread {payload.user_id}: {e}")
+            error_payload = {
+                "user_id": payload.user_id,
+                "status": "fatal_error",
+                "message": str(e)
+            }
+            await dispatch_webhook(payload.webhook_url, payload.webhook_secret, error_payload)
+            logger.info("Checkpointer db_pool successfully closed.")
 
 def sanitize_input(text: str) -> str:
     """W8: Input Sanitization menolak raw byte executable & karakter unicode ilegal."""
@@ -123,9 +121,8 @@ def sanitize_input(text: str) -> str:
 async def trigger_agent(req: AgentRequest, request: Request, background_tasks: BackgroundTasks, _token: str = Depends(verify_api_key)):
     job_id = str(uuid.uuid4())
     req.pesan = sanitize_input(req.pesan)  # W8 Sanitization applied
-    payload = req.model_dump()
     
-    background_tasks.add_task(run_agent_and_dispatch_webhook, payload)
+    background_tasks.add_task(run_agent_and_dispatch_webhook, req)
     
     return {
         "success": True,
