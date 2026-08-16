@@ -7,7 +7,7 @@ class AgentState(BaseModel):
 
     # Thread Identity
     thread_id: str = Field(description="Unique identifier untuk sesi user")
-    user_id: str = Field(description="Identifier user dari sistem POS")
+    user_id: str = Field(default="unknown", description="Identifier user dari sistem POS")
 
     # Conversation Memory
     messages: Annotated[list, add_messages] = Field(
