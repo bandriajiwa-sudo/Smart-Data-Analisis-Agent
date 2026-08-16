@@ -33,7 +33,7 @@ async def node_sql_generator(state: AgentState) -> dict:
     ])
     
     try:
-        llm = ChatGroq(model="llama3-70b-8192", api_key=settings.GROQ_API_KEY)
+        llm = ChatGroq(model="llama-3.1-70b-versatile", api_key=settings.GROQ_API_KEY)
         chain = prompt | llm
         result = chain.invoke({"question": last_message})
         generated_sql = result.content.strip().replace("```sql", "").replace("```", "").strip()

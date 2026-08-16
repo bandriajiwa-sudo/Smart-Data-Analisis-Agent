@@ -43,7 +43,7 @@ async def run_agent_for_telegram(chat_id: int, text_message: str):
             "thread_id": str(chat_id),
             "user_id": str(chat_id),
             "messages": [("user", text_message)],
-            "retry_count": 0
+            "retry_count": 0 
         }
         
         config = {"configurable": {"thread_id": str(chat_id)}}
