@@ -1,9 +1,23 @@
 import logging
 import asyncpg
+from decimal import Decimal
+from datetime import datetime, date
 from app.agent.state import AgentState
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+def json_serializable(row: dict) -> dict:
+    """W8: Sanitize database datatypes for LangGraph checkpoint JSON storage"""
+    cleaned = {}
+    for k, v in row.items():
+        if isinstance(v, Decimal):
+            cleaned[k] = float(v)
+        elif isinstance(v, (datetime, date)):
+            cleaned[k] = v.isoformat()
+        else:
+            cleaned[k] = v
+    return cleaned
 
 async def node_sql_executor(state: AgentState) -> dict:
     """Mengeksekusi SQL secara asinkron menggunakan koneksi read-only DB-POS."""
@@ -19,7 +33,7 @@ async def node_sql_executor(state: AgentState) -> dict:
         conn = await asyncpg.connect(settings.POS_DB_URI)
         try:
             rows = await conn.fetch(generated_sql)
-            query_result = [dict(row) for row in rows]
+            query_result = [json_serializable(dict(row)) for row in rows]
             logger.info(f"Fetch success, Row count: {len(query_result)}")
             return {"query_result": {"data": query_result[:100]}, "error_log": None, "status": "processing"}
         finally:
