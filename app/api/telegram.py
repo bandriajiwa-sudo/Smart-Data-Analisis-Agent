@@ -35,7 +35,6 @@ async def dispatch_telegram_message(chat_id: int, message: str):
 
 async def run_agent_for_telegram(chat_id: int, text_message: str):
     """Pipa orchestrator asinkron yang menjembatani LangGraph dan Telegram API"""
-    
     async with AsyncPostgresSaver.from_conn_string(settings.CHECKPOINTER_DB_URI) as checkpointer:
         app_graph = await create_agent_graph(checkpointer)
         
