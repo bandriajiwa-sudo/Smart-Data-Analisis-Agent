@@ -1,5 +1,9 @@
 # Smart Data Analyst Agent
 
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Layer-orange.svg)](https://langchain-ai.github.io/langgraph/)
+
 **Non-Invasive Cognitive Layer for Legacy POS.**
 Sistem enterprise-grade yang menambahkan kapabilitas agentic AI LLM ke PostgreSQL _legacy system_ tanpa menyentuh source code utama Anda.
 
