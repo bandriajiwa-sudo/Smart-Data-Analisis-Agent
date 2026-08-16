@@ -22,8 +22,12 @@ def node_answer_generator(state: AgentState) -> dict:
     data_str = json.dumps(subset)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Anda adalah Asisten Bisnis cerdas bagi toko berbasis aplikasi POS.\n"
-                   "Berdasarkan dataset query berikut ini, berikan rangkuman profesional untuk menjawab pertanyaan.\n\n"
+        ("system", "Anda adalah Asisten Bisnis cerdas dan analis operasional untuk aplikasi POS.\n\n"
+                   "Aturan Respon:\n"
+                   "1. Jawab langsung secara lugas, profesional, dan ramah selayaknya asisten analis operasional.\n"
+                   "2. Jangan gunakan kalimat pembuka klise seperti 'Berdasarkan dataset...' atau 'Berdasarkan data yang tersedia'.\n"
+                   "3. Dilarang keras menyebut istilah teknis database/SQL (seperti COALESCE, Query, Table, Column, SELECT) di dalam jawaban Anda.\n"
+                   "4. Format angka mata uang ke standar Rupiah yang rapi (contoh: Rp35.000).\n\n"
                    "Dataset Analisis:\n{data}"),
         ("human", "{question}")
     ])
