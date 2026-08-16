@@ -4,6 +4,7 @@ import asyncio
 from fastapi import APIRouter, BackgroundTasks, Request
 from app.core.config import settings
 from app.api.agent import create_agent_graph
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -34,27 +35,26 @@ async def dispatch_telegram_message(chat_id: int, message: str):
 
 async def run_agent_for_telegram(chat_id: int, text_message: str):
     """Pipa orchestrator asinkron yang menjembatani LangGraph dan Telegram API"""
-    app_graph = await create_agent_graph()
     
-    # Kita kunci thread memory session pake Chat ID Telegram! Murni per Room Chat.
-    state_input = {
-        "thread_id": str(chat_id),
-        "messages": [("user", text_message)],
-        "retry_count": 0
-    }
-    
-    config = {"configurable": {"thread_id": str(chat_id)}}
-    
-    try:
-        final_state = await app_graph.ainvoke(state_input, config=config)
-        answer = final_state.get("final_answer", "Maaf, sistem server AI lagi skip nerespon.")
-        await dispatch_telegram_message(chat_id, answer)
-    except Exception as e:
-        logger.error(f"Telegram execution blocker error di Thread {chat_id}: {e}")
-        await dispatch_telegram_message(chat_id, f"Oops bro, LangGraph-nya ngecrash: {e}")
-    finally:
-        if hasattr(app_graph, "db_pool"):
-            await app_graph.db_pool.close()
+    async with AsyncPostgresSaver.from_conn_string(settings.CHECKPOINTER_DB_URI) as checkpointer:
+        app_graph = await create_agent_graph(checkpointer)
+        
+        # Kita kunci thread memory session pake Chat ID Telegram! Murni per Room Chat.
+        state_input = {
+            "thread_id": str(chat_id),
+            "messages": [("user", text_message)],
+            "retry_count": 0
+        }
+        
+        config = {"configurable": {"thread_id": str(chat_id)}}
+        
+        try:
+            final_state = await app_graph.ainvoke(state_input, config=config)
+            answer = final_state.get("final_answer", "Maaf, sistem server AI lagi skip nerespon.")
+            await dispatch_telegram_message(chat_id, answer)
+        except Exception as e:
+            logger.error(f"Telegram execution blocker error di Thread {chat_id}: {e}")
+            await dispatch_telegram_message(chat_id, f"Oops bro, LangGraph-nya ngecrash: {e}")
 
 @router.post("/webhook")
 async def telegram_webhook_handler(request: Request, background_tasks: BackgroundTasks):

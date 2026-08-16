@@ -7,7 +7,6 @@ from app.agent.nodes.executor import node_sql_executor
 from app.agent.nodes.error_handler import node_error_handler
 from app.agent.nodes.answer_generator import node_answer_generator
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-import asyncpg 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ def route_from_execution(state: AgentState) -> str:
 def general_chat_fallback(state: AgentState) -> dict:
     return {"final_answer": "Halo! Saya asisten Smart Data POS. Ada yang bisa saya bantu dengan analisis basis data jualan anda hari ini?", "status": "success"}
 
-async def create_agent_graph():
+async def create_agent_graph(checkpointer):
     """Build and compile LangGraph Stateful Logic with Persistent PG Memory"""
     workflow = StateGraph(AgentState)
     
@@ -50,10 +49,7 @@ async def create_agent_graph():
     workflow.add_edge("general_chat", END)
     workflow.add_edge("answer_generator", END)
     
-    pool = await asyncpg.create_pool(settings.CHECKPOINTER_DB_URI)
-    checkpointer = AsyncPostgresSaver(pool)
     await checkpointer.setup()
     
     app = workflow.compile(checkpointer=checkpointer)
-    app.db_pool = pool
     return app
