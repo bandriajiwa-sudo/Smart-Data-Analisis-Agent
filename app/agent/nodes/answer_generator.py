@@ -33,7 +33,7 @@ def node_answer_generator(state: AgentState) -> dict:
     ])
     
     try:
-        llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
+        llm = ChatGroq(model="llama-3.1-8b-instant", api_key=settings.GROQ_API_KEY)
         chain = prompt | llm
         result = chain.invoke({"data": data_str, "question": last_message})
         return {"final_answer": result.content, "status": "success"}
