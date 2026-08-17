@@ -28,7 +28,7 @@ def node_intent_router(state: AgentState) -> dict:
     
     try:
         import json
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=settings.GEMINI_API_KEY)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=settings.GEMINI_API_KEY)
         result = llm.invoke(prompt)
         text = result.content.strip().replace("```json", "").replace("```", "").strip()
         parsed = json.loads(text)

@@ -33,7 +33,7 @@ def node_answer_generator(state: AgentState) -> dict:
     ])
     
     try:
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=settings.GEMINI_API_KEY)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=settings.GEMINI_API_KEY)
         chain = prompt | llm
         result = chain.invoke({"data": data_str, "question": last_message})
         return {"final_answer": result.content, "status": "success"}
