@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     
     # API & Agent Authentication
     API_KEY: str
-    GROQ_API_KEY: str
+    GEMINI_API_KEY: str
     
     # Webhook Verification & Tools
     WEBHOOK_SECRET: str

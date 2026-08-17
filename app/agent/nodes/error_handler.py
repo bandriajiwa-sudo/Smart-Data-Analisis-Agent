@@ -1,5 +1,5 @@
 import logging
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from app.agent.state import AgentState
 from app.core.config import settings
@@ -37,7 +37,7 @@ def node_error_handler(state: AgentState) -> dict:
         return {"status": "error", "retry_count": retry_count, "error_log": f"Max retry (3) reached: {error_log}"}
         
     prompt = ChatPromptTemplate.from_template(ERROR_CORRECTION_PROMPT)
-    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=settings.GEMINI_API_KEY)
     
     try:
         chain = prompt | llm

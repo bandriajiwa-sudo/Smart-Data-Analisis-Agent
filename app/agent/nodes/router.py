@@ -1,5 +1,5 @@
 import logging
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 from app.agent.state import AgentState
 from app.core.config import settings
@@ -26,7 +26,7 @@ def node_intent_router(state: AgentState) -> dict:
     )
     
     try:
-        llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=settings.GEMINI_API_KEY)
         structured_llm = llm.with_structured_output(IntentResponse)
         result = structured_llm.invoke(prompt)
         intent = result.intent
