@@ -18,11 +18,24 @@ def node_intent_router(state: AgentState) -> dict:
     last_message = messages[-1].content if hasattr(messages[-1], "content") else str(messages[-1])
     
     prompt = (
-        "Anda adalah router cerdas. Klasifikasikan intent dari pesan pengguna berikut:\n"
-        "1. 'database_query': Meminta data operasional spesifik dari sistem (contoh: penjualan, inventory)\n"
-        "2. 'data_analysis': Meminta analisis komparatif atau agregasi lanjutan (contoh: tren bulan lalu)\n"
-        "3. 'general_chat': Sapaan, tanya kabar, atau chit-chat umum tanpa butuh database.\n\n"
-        "WAJIB OUTPUT HANYA JSON MURNI { \"intent\": \"nama_intent_disini\" } TANPA BLOCK MARKDOWN (TANPA ```json)!!!\n"
+        "Anda adalah router klasifikasi intent untuk sistem bengkel AHASS (Jasa Service & Sparepart Motor Honda).\n"
+        "Tugasmu HANYA mengklasifikasi pesan user ke SATU dari tiga kategori:\n\n"
+        "1. 'database_query' - PILIH INI jika user bertanya tentang:\n"
+        "   - Transaksi, penjualan, omset, pendapatan, total, jumlah\n"
+        "   - Jasa, service, servis, ganti oli, tune up\n"
+        "   - Sparepart, suku cadang, produk, barang, stok, inventory\n"
+        "   - Pelanggan, customer, motor, kendaraan\n"
+        "   - Data hari ini, minggu ini, bulan ini, tahun ini\n"
+        "   - Laporan, rekap, daftar, list\n"
+        "   - Berapa, ada berapa, total berapa, yang mana, apa saja\n\n"
+        "2. 'data_analysis' - PILIH INI jika user minta PERBANDINGAN atau TREN:\n"
+        "   - Contoh: 'bandingkan penjualan bulan lalu dengan bulan ini'\n"
+        "   - Contoh: 'tren penjualan 3 bulan terakhir'\n\n"
+        "3. 'general_chat' - PILIH INI HANYA jika pesan BUKAN tentang data/bisnis:\n"
+        "   - Contoh: 'halo', 'apa kabar', 'terima kasih', 'siapa kamu'\n\n"
+        "PENTING: Jika RAGU antara database_query dan general_chat, SELALU pilih database_query!\n\n"
+        "OUTPUT HANYA JSON MURNI: {\"intent\": \"nama_intent\"}\n"
+        "DILARANG pakai markdown atau backticks!\n\n"
         f"Pesan User: {last_message}"
     )
     
