@@ -26,7 +26,7 @@ def node_intent_router(state: AgentState) -> dict:
     )
     
     try:
-        llm = ChatGroq(model="llama-3.1-8b-instant", api_key=settings.GROQ_API_KEY)
+        llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
         structured_llm = llm.with_structured_output(IntentResponse)
         result = structured_llm.invoke(prompt)
         intent = result.intent
