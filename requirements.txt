@@ -10,7 +10,8 @@ langchain-google-genai<2.0.0
 httpx
 python-dotenv
 sqlparse
-langgraph-checkpoint-postgres
+langgraph-checkpoint-postgres<2.0.0
+langgraph-checkpoint<2.0.0
 slowapi
 python-json-logger
 cachetools
