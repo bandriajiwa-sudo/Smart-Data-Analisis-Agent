@@ -10,7 +10,7 @@ class IntentResponse(BaseModel):
     intent: str = Field(description="Klasifikasi intent: database_query | data_analysis | general_chat")
 
 def node_intent_router(state: AgentState) -> dict:
-    """Klasifikasi intent menggunakan LLM Structured Output"""
+    """Klasifikasi intent menggunakan LLM native JSON"""
     messages = state.messages
     if not messages:
         return {"intent": "general_chat"}
@@ -22,14 +22,21 @@ def node_intent_router(state: AgentState) -> dict:
         "1. 'database_query': Meminta data operasional spesifik dari sistem (contoh: penjualan, inventory)\n"
         "2. 'data_analysis': Meminta analisis komparatif atau agregasi lanjutan (contoh: tren bulan lalu)\n"
         "3. 'general_chat': Sapaan, tanya kabar, atau chit-chat umum tanpa butuh database.\n\n"
+        "WAJIB OUTPUT HANYA JSON MURNI { \"intent\": \"nama_intent_disini\" } TANPA BLOCK MARKDOWN (TANPA ```json)!!!\n"
         f"Pesan User: {last_message}"
     )
     
     try:
+        import json
         llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=settings.GEMINI_API_KEY)
-        structured_llm = llm.with_structured_output(IntentResponse)
-        result = structured_llm.invoke(prompt)
-        intent = result.intent
+        result = llm.invoke(prompt)
+        text = result.content.strip().replace("```json", "").replace("```", "").strip()
+        parsed = json.loads(text)
+        intent = parsed.get("intent", "general_chat")
+        
+        if intent not in ["database_query", "data_analysis", "general_chat"]:
+            intent = "general_chat"
+            
         logger.info(f"Routed intent: {intent}")
         return {"intent": intent, "retry_count": 0, "status": "processing"}
     except Exception as e:
