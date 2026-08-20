@@ -34,15 +34,8 @@ async def node_sql_generator(state: AgentState) -> dict:
     ])
     
     try:
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(
-            model="nvidia/nemotron-3.5-lightning:free", 
-            api_key=settings.OPENROUTER_API_KEY, 
-            base_url="https://openrouter.ai/api/v1"
-        )
-        chain = prompt | llm
-        result = chain.invoke({"question": last_message})
-        generated_sql = result.content.strip().replace("```sql", "").replace("```", "").strip()
+        from app.services.llm_adapter import llm_adapter
+        generated_sql = llm_adapter.invoke_and_clean_sql(prompt, {"question": last_message})
         logger.info(f"Generated SQL: {generated_sql}")
         return {"generated_sql": generated_sql}
     except Exception as e:

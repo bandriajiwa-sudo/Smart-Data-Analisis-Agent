@@ -32,15 +32,9 @@ def node_answer_generator(state: AgentState) -> dict:
     ])
     
     try:
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(
-            model="nvidia/nemotron-3.5-lightning:free", 
-            api_key=settings.OPENROUTER_API_KEY, 
-            base_url="https://openrouter.ai/api/v1"
-        )
-        chain = prompt | llm
-        result = chain.invoke({"data": data_str, "question": last_message})
-        return {"final_answer": result.content, "status": "success"}
+        from app.services.llm_adapter import llm_adapter
+        content = llm_adapter.invoke(prompt, {"data": data_str, "question": last_message})
+        return {"final_answer": content, "status": "success"}
     except Exception as e:
         logger.error(f"Final Answer Error: {e}")
         # Tangkap 429 Too Many Requests spesifik

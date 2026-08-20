@@ -36,17 +36,10 @@ def node_error_handler(state: AgentState) -> dict:
         return {"status": "error", "retry_count": retry_count, "error_log": f"Max retry (3) reached: {error_log}"}
         
     prompt = ChatPromptTemplate.from_template(ERROR_CORRECTION_PROMPT)
-    from langchain_openai import ChatOpenAI
-    llm = ChatOpenAI(
-            model="nvidia/nemotron-3.5-lightning:free", 
-            api_key=settings.OPENROUTER_API_KEY, 
-            base_url="https://openrouter.ai/api/v1"
-        )
     
     try:
-        chain = prompt | llm
-        result = chain.invoke({"generated_sql": old_sql, "error_log": error_log})
-        corrected_sql = result.content.strip().replace("```sql", "").replace("```", "").strip()
+        from app.services.llm_adapter import llm_adapter
+        corrected_sql = llm_adapter.invoke_and_clean_sql(prompt, {"generated_sql": old_sql, "error_log": error_log})
         logger.info(f"Langgraph Self-healed SQL Retry {retry_count} -> {corrected_sql}")
         return {"generated_sql": corrected_sql, "retry_count": retry_count, "error_log": None, "status": "processing"}
     except Exception as e:

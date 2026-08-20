@@ -39,16 +39,8 @@ def node_intent_router(state: AgentState) -> dict:
     )
     
     try:
-        import json
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(
-            model="nvidia/nemotron-3.5-lightning:free", 
-            api_key=settings.OPENROUTER_API_KEY, 
-            base_url="https://openrouter.ai/api/v1"
-        )
-        result = llm.invoke(prompt)
-        text = result.content.strip().replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(text)
+        from app.services.llm_adapter import llm_adapter
+        parsed = llm_adapter.invoke_and_parse_json(prompt)
         intent = parsed.get("intent", "general_chat")
         
         if intent not in ["database_query", "data_analysis", "general_chat"]:
