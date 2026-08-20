@@ -1,5 +1,4 @@
 import logging
-from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 from app.agent.state import AgentState
 from app.core.config import settings
