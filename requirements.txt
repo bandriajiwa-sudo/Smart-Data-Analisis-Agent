@@ -4,7 +4,7 @@ pydantic
 pydantic-settings
 asyncpg
 langgraph
-langchain-google-genai
+langchain-openai
 httpx
 python-dotenv
 sqlparse

@@ -41,7 +41,12 @@ def node_intent_router(state: AgentState) -> dict:
     
     try:
         import json
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=settings.GEMINI_API_KEY)
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(
+            model="nvidia/nemotron-3.5-lightning:free", 
+            api_key=settings.OPENROUTER_API_KEY, 
+            base_url="https://openrouter.ai/api/v1"
+        )
         result = llm.invoke(prompt)
         text = result.content.strip().replace("```json", "").replace("```", "").strip()
         parsed = json.loads(text)
