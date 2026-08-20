@@ -39,4 +39,8 @@ def node_answer_generator(state: AgentState) -> dict:
         return {"final_answer": result.content, "status": "success"}
     except Exception as e:
         logger.error(f"Final Answer Error: {e}")
-        return {"final_answer": "Terjadi galat (error) di dalam sistem NLP kami saat memformulasikan respon akhir.", "status": "error"}
+        # Tangkap 429 Too Many Requests spesifik
+        if "429" in str(e) or "Resource exhausted" in str(e):
+            return {"final_answer": "Sistem NLP Overload (Limit 8x Request Per Menit gratisan Google habis karena banyak query berturut-turut). Tolong tunggu 1-2 menit sebelum tanya lagi ya bro! ⏳", "status": "error"}
+            
+        return {"final_answer": f"Terjadi galat HTTP API dari server AI: {str(e)}", "status": "error"}
