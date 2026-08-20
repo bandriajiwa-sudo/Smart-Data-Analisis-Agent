@@ -36,7 +36,12 @@ def node_error_handler(state: AgentState) -> dict:
         return {"status": "error", "retry_count": retry_count, "error_log": f"Max retry (3) reached: {error_log}"}
         
     prompt = ChatPromptTemplate.from_template(ERROR_CORRECTION_PROMPT)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=settings.GEMINI_API_KEY)
+    from langchain_openai import ChatOpenAI
+    llm = ChatOpenAI(
+            model="nvidia/nemotron-3.5-lightning:free", 
+            api_key=settings.OPENROUTER_API_KEY, 
+            base_url="https://openrouter.ai/api/v1"
+        )
     
     try:
         chain = prompt | llm
